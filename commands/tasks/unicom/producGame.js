@@ -364,16 +364,15 @@ var producGame = {
     },
     doGameFlowTask: async (axios, options) => {
         let { popularList: allgames, jar } = await producGame.popularGames(axios, options)
-        let games = await producGame.timeTaskQuery(axios, options)
-        games = allgames.filter(g => games.filter(g => g.state === '0').map(i => i.gameId).indexOf(g.id) !== -1)
+        games = allgames.filter(g => g.state === '0')
         console.info('剩余未完成game', games.length)
-        let queue = new PQueue({ concurrency: 30 });
+        let queue = new PQueue({ concurrency: 5 });
 
         // 特例游戏
         // 亿万豪车2
         let others = ['1110422106']
 
-        console.info('调度任务中', '并发数', 30)
+        console.info('--->>代刷圈钱狗必死🐴  调度任务中', '并发数', 5)
         for (let game of games) {
             queue.add(async () => {
                 console.info(game.name)
@@ -400,14 +399,15 @@ var producGame = {
         await queue.onIdle()
 
         await new Promise((resolve, reject) => setTimeout(resolve, (Math.floor(Math.random() * 10) + 30) * 1000))
-        games = await producGame.timeTaskQuery(axios, options)
-        games = games.filter(g => g.state === '1')
-        console.info('剩余未领取game', games.length)
+        
+        let { popularList: undonegames, undonejar } = await producGame.timeTaskQuery(axios, options)
+        games = undonegames.filter(g => g.state === '1')
+        console.info('---> 且用且珍惜🍀 剩余未领取game', games.length)
         for (let game of games) {
             await new Promise((resolve, reject) => setTimeout(resolve, (Math.floor(Math.random() * 10) + 15) * 1000))
             await producGame.gameFlowGet(axios, {
                 ...options,
-                gameId: game.gameId
+                gameId: game.id
             })
         }
     },
@@ -415,9 +415,9 @@ var producGame = {
         let { games, jar } = await producGame.getTaskList(axios, options)
         games = games.filter(d => d.task === '5' && d.reachState === '0' && d.task_type === 'duration')
         console.info('剩余未完成game', games.length)
-        let queue = new PQueue({ concurrency: 30 });
+        let queue = new PQueue({ concurrency: 5 });
 
-        console.info('调度任务中', '并发数', 30)
+        console.info('调度任务中', '并发数', 5)
         for (let game of games) {
             queue.add(async () => {
                 console.info(game.name)
@@ -469,11 +469,11 @@ var producGame = {
     timeTaskQuery: async (axios, options) => {
         const useragent = buildUnicomUserAgent(options, 'p')
         let params = {
-            'methodType': 'timeTaskQuery',
+            'methodType': 'popularGames',
             'deviceType': 'Android',
-            'clientVersion': appInfo.version
+            'clientVersion': appInfo.version,
         }
-        let { data } = await axios.request({
+        let { data, config } = await axios.request({
             baseURL: 'https://m.client.10010.com/',
             headers: {
                 "user-agent": useragent,
@@ -485,8 +485,10 @@ var producGame = {
             data: transParams(params)
         })
         if (data) {
-            console.info(data.msg)
-            return data.data//0未进行 state=1待领取 state=2已完成
+            return {
+                jar: config.jar,
+                popularList: data.popularList || []
+            }
         } else {
             console.error('记录失败')
         }
