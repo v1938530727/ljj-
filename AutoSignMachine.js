@@ -19,7 +19,7 @@ function registerEvn(argvs) {
     process.env['notify_dingtalk_token'] = argvs.notify_dingtalk_token
   }
 
-  // see https://api.fd.mob.com/bot[[argvs.notify_tele_bottoken]]/getUpdates
+  // see https://api.telegram.org/bot[[argvs.notify_tele_bottoken]]/getUpdates
   // see @getuserID
   if (argvs.notify_tele_bottoken && argvs.notify_tele_chatid) {
     // 机器人TOKEN
